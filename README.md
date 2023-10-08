@@ -155,5 +155,4 @@ No known bugs at this time.
 
 ## Authors
 Mohamed Chebbi - [Github](https://github.com/mohamedchebbbi) /   
-Asmaa Alouani  - [Github](https://github.com/JLasmaa) / 
 
