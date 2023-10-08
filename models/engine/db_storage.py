@@ -63,7 +63,6 @@ class DBStorage:
         """delete from the current database session obj if not None"""
         if obj is not None:
             self.__session.delete(obj)
-            self.save()  # TODO: keep this?
 
     def reload(self):
         """reloads data from the database"""
@@ -77,14 +76,31 @@ class DBStorage:
         self.__session.remove()
 
     def get(self, cls, id):
-        """A method to retrieve one object"""
-        key_name = cls + "." + id
-        return self.all().get(key_name)
+        """
+        Returns the object based on the class name and its ID, or
+        None if not found
+        """
+        if cls not in classes.values():
+            return None
+
+        all_cls = models.storage.all(cls)
+        for value in all_cls.values():
+            if (value.id == id):
+                return value
+
+        return None
 
     def count(self, cls=None):
-        """A method to count the number of objects in storage"""
+        """
+        count the number of objects in storage
+        """
+        all_class = classes.values()
+
         if not cls:
-            return len(self.all())
+            count = 0
+            for clas in all_class:
+                count += len(models.storage.all(clas).values())
         else:
-            return len([v for v in self.all().values()
-                        if type(v).__name__ == cls])
+            count = len(models.storage.all(cls).values())
+
+        return count
