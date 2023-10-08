@@ -1,63 +1,66 @@
-$(document).ready(init);
+$( document ).ready(function () {
 
-const HOST = '0.0.0.0';
-const amenityObj = {};
-
-function init () {
-  $('.amenities .popover input').change(function () {
+  /*****************************************************
+    display list of checkboxes clicked
+   *****************************************************/
+  let ls_amen = {};
+  $('input[type=checkbox]').change (function () {
     if ($(this).is(':checked')) {
-      amenityObj[$(this).attr('data-name')] = $(this).attr('data-id');
-    } else if ($(this).is(':not(:checked)')) {
-      delete amenityObj[$(this).attr('data-name')];
-    }
-    const names = Object.keys(amenityObj);
-    $('.amenities h4').text(names.sort().join(', '));
-  });
-
-  apiStatus();
-  searchPlacesAmenities();
-}
-
-function apiStatus () {
-  const API_URL = `http://${HOST}:5001/api/v1/status/`;
-  $.get(API_URL, (data, textStatus) => {
-    if (textStatus === 'success' && data.status === 'OK') {
-      $('#api_status').addClass('available');
+      ls_amen[$(this).attr('data-id')] = $(this).attr('data-name');
     } else {
-      $('#api_status').removeClass('available');
+      delete ls_amen[$(this).data('id')];
     }
+    $('.amenities h4').text(Object.values(ls_amen).join(', '));
   });
-}
 
-function searchPlacesAmenities () {
-  const PLACES_URL = `http://${HOST}:5001/api/v1/places_search/`;
+  /*******************************************************
+    display red circle on top right of page if status ok
+   *******************************************************/
   $.ajax({
-    url: PLACES_URL,
-    type: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    data: JSON.stringify({ amenities: Object.values(amenityObj) }),
-    success: function (response) {
-      $('SECTION.places').empty();
-      for (const r of response) {
-        const article = ['<article>',
-          '<div class="title_box">',
-        `<h2>${r.name}</h2>`,
-        `<div class="price_by_night">$${r.price_by_night}</div>`,
-        '</div>',
-        '<div class="information">',
-        `<div class="max_guest">${r.max_guest} Guest(s)</div>`,
-        `<div class="number_rooms">${r.number_rooms} Bedroom(s)</div>`,
-        `<div class="number_bathrooms">${r.number_bathrooms} Bathroom(s)</div>`,
-        '</div>',
-        '<div class="description">',
-        `${r.description}`,
-        '</div>',
-        '</article>'];
-        $('SECTION.places').append(article.join(''));
+    type: 'GET',
+    url: 'http://0.0.0.0:5001/api/v1/status/',
+    dataType: 'json',
+    success: function (data) {
+      if (data.status === 'OK') {
+	$('#api_status').addClass('available');
+      } else {
+	$('#api_status').removeClass('available');
       }
-    },
-    error: function (error) {
-      console.log(error);
     }
   });
-}
+
+  /*******************************************************
+    populate Places from frontend, instead of backend jinja
+   *******************************************************/
+    $.ajax({
+      type: 'POST',
+      url: 'http://0.0.0.0:5001/api/v1/places_search/',
+      data: JSON.stringify({}),
+      contentType: 'application/json',
+      success: function (data) {
+	for (let i = 0; i < data.length; i++) {
+	  $('section.places').append('<article><div class="title"><h2>' + data[i].name + '</h2><div class="price_by_night">' + data[i].price_by_night + '</div></div><div class="information"><div class="max_guest"><i class="fa fa-users fa-3x" aria-hidden="true"></i><br />' + data[i].max_guest + ' Guests</div><div class="number_rooms"><i class="fa fa-bed fa-3x" aria-hidden="true"></i><br />' + data[i].number_rooms + ' Bedrooms</div><div class="number_bathrooms"><i class="fa fa-bath fa-3x" aria-hidden="true"></i><br />' + data[i].number_bathrooms + ' Bathroom</div></div><div class="description">' + data[i].description + '</div></article>');
+	}
+      }
+    });
+
+  /*******************************************************
+    populate Places from frontend, instead of backend jinja;
+    filter places displayed based on amenity checkboxed list
+   *******************************************************/
+  $('button').click(function () {
+    $('article').remove();
+    $.ajax({
+      type: 'POST',
+      url: 'http://0.0.0.0:5001/api/v1/places_search/',
+      data: JSON.stringify({'amenities': Object.keys(ls_amen)}),
+      contentType: 'application/json',
+      success: function (data) {
+	for (let i = 0; i < data.length; i++) {
+	  $('section.places').append('<article><div class="title"><h2>' + data[i].name + '</h2><div class="price_by_night">' + data[i].price_by_night + '</div></div><div class="information"><div class="max_guest"><i class="fa fa-users fa-3x" aria-hidden="true"></i><br />' + data[i].max_guest + ' Guests</div><div class="number_rooms"><i class="fa fa-bed fa-3x" aria-hidden="true"></i><br />' + data[i].number_rooms + ' Bedrooms</div><div class="number_bathrooms"><i class="fa fa-bath fa-3x" aria-hidden="true"></i><br />' + data[i].number_bathrooms + ' Bathroom</div></div><div class="description">' + data[i].description + '</div></article>');
+	}
+      }
+    });
+  });
+
+});
